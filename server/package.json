@@ -1,7 +1,7 @@
 {
   "name": "codearena-backend",
   "version": "1.0.0",
-  "description": "CodeArena Online Judge Backend",
+  "description": "CodeArena Online Judge Backend API",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -15,5 +15,8 @@
   },
   "engines": {
     "node": ">=16.0.0"
-  }
+  },
+  "keywords": ["coding", "judge", "api", "express", "nodejs"],
+  "author": "Your Name",
+  "license": "MIT"
 }
