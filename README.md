@@ -10,6 +10,7 @@
 
 ![Code Master Logo](screenshots/front.png)
 
+![Code Master Logo](screenshots/problem.png)
 
 ### 🌟 Why Code Master?
 
