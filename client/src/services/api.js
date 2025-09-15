@@ -1,57 +1,36 @@
 import axios from 'axios';
 
-const API_BASE_URL = process.env.NODE_ENV === 'production' 
-  ? 'https://codearena-backend-a9o6.onrender.com'
-  : 'http://localhost:5000';
+const API_BASE_URL = 'https://codearena-backend-a9o6.onrender.com';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 10000,
+  timeout: 30000, // Increased to 30 seconds
 });
 
-// Add request interceptor for debugging
-api.interceptors.request.use(
-  (config) => {
-    console.log(`API Request: ${config.method?.toUpperCase()} ${config.url}`);
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
-
-// Add response interceptor for error handling
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    console.error('API Error:', error.response?.data || error.message);
-    return Promise.reject(error);
+// Add retry logic for sleeping services
+const retryRequest = async (requestFn, retries = 2) => {
+  for (let i = 0; i <= retries; i++) {
+    try {
+      return await requestFn();
+    } catch (error) {
+      if (i === retries) throw error;
+      
+      console.log(`Request failed, retrying... (${i + 1}/${retries})`);
+      // Wait 2 seconds before retry
+      await new Promise(resolve => setTimeout(resolve, 2000));
+    }
   }
-);
+};
 
 export const problemsAPI = {
-  // Get all problems with stats
-  getAllProblems: () => api.get('/api/problems'),
-  
-  // Get specific problem with examples
-  getProblem: (id) => api.get(`/api/problems/${id}`),
-  
-  // Get code template for specific language
-  getTemplate: (id, language) => api.get(`/api/problems/${id}/template/${language}`),
-  
-  // Submit code for evaluation
-  submitCode: (problemId, code, language) => api.post('/api/submit', {
-    problemId,
-    code,
-    language
-  }),
-  
-  // Get platform statistics
-  getStats: () => api.get('/stats'),
-  
-  // Get recent submissions
-  getRecentSubmissions: () => api.get('/api/recent-submissions'),
-  
-  // Health check
-  getHealth: () => api.get('/health')
+  getAllProblems: () => retryRequest(() => api.get('/api/problems')),
+  getProblem: (id) => retryRequest(() => api.get(`/api/problems/${id}`)),
+  getTemplate: (id, language) => retryRequest(() => api.get(`/api/problems/${id}/template/${language}`)),
+  submitCode: (problemId, code, language) => retryRequest(() => 
+    api.post('/api/submit', { problemId, code, language })
+  ),
+  getStats: () => retryRequest(() => api.get('/stats')),
+  getHealth: () => retryRequest(() => api.get('/health'))
 };
 
 export default api;
