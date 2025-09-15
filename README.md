@@ -1,29 +1,7 @@
 # 🏆 Code Master - Online Judge Platform
 
-![Code Master Banner](https://via.placeholder.com/1200x300/282c34/ffffff?text=Code+Master+-+Online+Judge+Platform)
 
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-Visit%20Site-blue)](https://code-master-frontend.onrender.com)
-[![Backend API](https://img.shields.io/badge/Backend%20API-Live-green)](https://codearena-backend-a9o6.onrender.com)
-[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-## 📖 Table of Contents
-
-- [About The Project](#about-the-project)
-- [Features](#features)
-- [Tech Stack](#tech-stack)
-- [Architecture](#architecture)
-- [Getting Started](#getting-started)
-  - [Prerequisites](#prerequisites)
-  - [Installation](#installation)
-  - [Environment Variables](#environment-variables)
-  - [Database Setup](#database-setup)
-- [Usage](#usage)
-- [API Endpoints](#api-endpoints)
-- [Deployment](#deployment)
-- [Contributing](#contributing)
-- [License](#license)
-- [Contact](#contact)
-- [Acknowledgments](#acknowledgments)
 
 ## 🎯 About The Project
 
@@ -78,19 +56,80 @@
 - **CORS**: Enabled for cross-origin requests
 - **Deployment**: Render (Web Service)
 
-### Database & Services
-- **Database**: InfinityFree MySQL / Railway MySQL
-- **Code Execution**: Judge0 CE API via RapidAPI
-- **File Storage**: Database (TEXT fields)
-- **Session Management**: Stateless (JWT ready)
 
-### DevOps & Deployment
-- **Version Control**: Git & GitHub
-- **CI/CD**: GitHub integration with Render
-- **Frontend Hosting**: Render Static Sites
-- **Backend Hosting**: Render Web Services
-- **Database Hosting**: InfinityFree / Railway
-- **Domain**: Render subdomains (.onrender.com)
+🖥️ How to Run Code Master Locally
+📋 Prerequisites
+bash
+# Check if you have these installed:
+node --version    # Need v16+
+npm --version     # Comes with Node.js
+mysql --version   # Need MySQL 8+
+git --version     # For cloning repo
+🚀 Quick Setup Commands
+1. Clone & Install
+bash
+# Clone the project
+git clone https://github.com/yourusername/code-master.git
+cd code-master
 
-## 🏗️ Architecture
+# Install backend dependencies
+cd server
+npm install
+
+# Install frontend dependencies
+cd ../client
+npm install
+2. Setup Database
+bash
+# Connect to MySQL
+mysql -u root -p
+
+# Create database and tables
+CREATE DATABASE code_master_db;
+USE code_master_db;
+
+# Run the table creation SQL (copy from setup section above)
+# Then add sample data and exit MySQL
+3. Configure Environment
+bash
+# Backend .env file (server/.env)
+NODE_ENV=development
+PORT=5000
+DB_HOST=localhost
+DB_USER=root
+DB_PASSWORD=your_mysql_password
+DB_NAME=code_master_db
+DB_PORT=3306
+RAPIDAPI_KEY=your_judge0_api_key
+
+# Frontend .env file (client/.env)
+VITE_API_URL=http://localhost:5000
+4. Start Both Servers
+bash
+# Terminal 1 - Backend
+cd server
+npm start
+
+# Terminal 2 - Frontend  
+cd client
+npm run dev
+5. Access Application
+Frontend: http://localhost:3000
+
+Backend API: http://localhost:5000
+
+Health Check: http://localhost:5000/health
+
+✅ That's It!
+Your Code Master platform should now be running locally with:
+
+React frontend on port 3000
+
+Express backend on port 5000
+
+MySQL database with sample problems
+
+Judge0 API integration for code execution
+
+If you see connection errors, check that MySQL is running and credentials are correct in the .env files.
 
