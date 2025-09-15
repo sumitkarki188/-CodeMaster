@@ -1,115 +1,252 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { problemsAPI } from '../services/api';
-import CodeEditor from './CodeEditor';
+import './ProblemView.css';
 
 const ProblemView = () => {
-    const { id } = useParams();
-    const navigate = useNavigate();
-    const [problem, setProblem] = useState(null);
-    const [loading, setLoading] = useState(true);
+  const { id } = useParams();
+  const [problem, setProblem] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [selectedLanguage, setSelectedLanguage] = useState('cpp');
+  const [code, setCode] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [result, setResult] = useState(null);
 
-    useEffect(() => {
-        loadProblem();
-    }, [id]);
+  const languages = {
+    'cpp': 'C++',
+    'python': 'Python',
+    'java': 'Java',
+    'c': 'C'
+  };
 
-    const loadProblem = async () => {
-        try {
-            const response = await problemsAPI.getProblem(id);
-            setProblem(response.data);
-        } catch (apiError) {
-            console.error('Failed to load problem:', apiError.message);
-        }
-        setLoading(false);
-    };
+  useEffect(() => {
+    fetchProblem();
+  }, [id]);
 
-    if (loading) return <div className="loading">Loading problem...</div>;
-    if (!problem) return <div className="error">Problem not found</div>;
+  useEffect(() => {
+    if (problem) {
+      loadTemplate();
+    }
+  }, [problem, selectedLanguage]);
 
-    // Use examples from API response (fetched from test_cases table)
-    const examples = problem.examples && problem.examples.length > 0 
-        ? problem.examples 
-        : [{
-            input: 'No examples available',
-            output: 'Please check problem description',
-            explanation: 'Test cases will be added soon.'
-          }];
+  const fetchProblem = async () => {
+    try {
+      setLoading(true);
+      const response = await problemsAPI.getProblem(id);
+      setProblem(response.data);
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to load problem');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    return (
-        <div className="problem-view">
-            <div className="problem-layout">
-                {/* Problem Description */}
-                <div className="problem-panel">
-                    <div className="problem-header">
-                        <button onClick={() => navigate('/')} className="back-btn">
-                            ← Problems
-                        </button>
-                        <h1>{problem.title}</h1>
-                        <span className={`difficulty ${problem.difficulty.toLowerCase()}`}>
-                            {problem.difficulty}
-                        </span>
-                    </div>
+  const loadTemplate = async () => {
+    if (!problem || !selectedLanguage) return;
+    
+    try {
+      const response = await problemsAPI.getTemplate(id, selectedLanguage);
+      setCode(response.data.template || '');
+    } catch (err) {
+      console.error('Failed to load template:', err);
+      setCode('// Write your code here');
+    }
+  };
 
-                    <div className="problem-content">
-                        <div className="section">
-                            <p>{problem.description}</p>
-                        </div>
+  const handleSubmit = async () => {
+    if (!code.trim()) {
+      alert('Please write some code before submitting!');
+      return;
+    }
 
-                        {/* Auto-generated Examples from Test Cases */}
-                        {examples.length > 0 && examples[0].input !== 'No examples available' && (
-                            <div className="section">
-                                <h3>Examples:</h3>
-                                <div className="examples-container">
-                                    {examples.map((example, index) => (
-                                        <div key={index} className="example-card">
-                                            <div className="example-header">
-                                                <strong>Example {index + 1}:</strong>
-                                            </div>
-                                            <div className="example-content">
-                                                <div className="example-row">
-                                                    <span className="label">Input:</span>
-                                                    <code className="example-code">{example.input}</code>
-                                                </div>
-                                                <div className="example-row">
-                                                    <span className="label">Output:</span>
-                                                    <code className="example-code">{example.output}</code>
-                                                </div>
-                                                {example.explanation && (
-                                                    <div className="example-row">
-                                                        <span className="label">Explanation:</span>
-                                                        <span className="explanation">{example.explanation}</span>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
+    try {
+      setSubmitting(true);
+      setResult(null);
+      
+      const response = await problemsAPI.submitCode(id, code, selectedLanguage);
+      setResult(response.data);
+    } catch (err) {
+      setResult({
+        verdict: 'System Error',
+        error: err.response?.data?.error || 'Submission failed'
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
-                        {problem.constraints && (
-                            <div className="section">
-                                <h3>Constraints:</h3>
-                                <div className="constraints">
-                                    <p>{problem.constraints}</p>
-                                </div>
-                            </div>
-                        )}
+  const getVerdictColor = (verdict) => {
+    switch (verdict) {
+      case 'Accepted': return '#00b800';
+      case 'Wrong Answer': return '#ff0000';
+      case 'Compilation Error': return '#ff6600';
+      case 'Time Limit Exceeded': return '#ff9900';
+      case 'Runtime Error': return '#cc0000';
+      case 'System Error': return '#666';
+      default: return '#666';
+    }
+  };
 
-                        <div className="section">
-                            <h3>Follow-up:</h3>
-                            <p>Can you solve this with optimal time complexity?</p>
-                        </div>
-                    </div>
-                </div>
+  if (loading) return (
+    <div className="loading">
+      <div className="spinner"></div>
+      <p>Loading problem...</p>
+    </div>
+  );
 
-                {/* Code Editor */}
-                <div className="editor-panel">
-                    <CodeEditor problem={problem} />
-                </div>
-            </div>
+  if (error) return (
+    <div className="error">
+      <h3>❌ Error</h3>
+      <p>{error}</p>
+      <Link to="/" className="back-btn">← Back to Problems</Link>
+    </div>
+  );
+
+  if (!problem) return null;
+
+  return (
+    <div className="problem-view">
+      {/* Header */}
+      <div className="problem-header">
+        <Link to="/" className="back-link">← Back to Problems</Link>
+        <div className="problem-title">
+          <h1>#{problem.id}. {problem.title}</h1>
+          <span 
+            className="difficulty-badge"
+            style={{ 
+              backgroundColor: problem.difficulty === 'Easy' ? '#00b800' : 
+                             problem.difficulty === 'Medium' ? '#ffa500' : '#ff0000' 
+            }}
+          >
+            {problem.difficulty}
+          </span>
         </div>
-    );
+      </div>
+
+      <div className="problem-content">
+        {/* Problem Description */}
+        <div className="problem-panel">
+          <div className="panel-header">
+            <h3>📋 Problem Description</h3>
+          </div>
+          <div className="panel-content">
+            <div className="description">
+              {problem.description}
+            </div>
+
+            {/* Examples */}
+            {problem.examples && problem.examples.length > 0 && (
+              <div className="examples">
+                <h4>Examples:</h4>
+                {problem.examples.map((example, index) => (
+                  <div key={index} className="example">
+                    <div className="example-header">Example {index + 1}:</div>
+                    <div className="example-content">
+                      <div><strong>Input:</strong> {example.input}</div>
+                      <div><strong>Output:</strong> {example.output}</div>
+                      {example.explanation && (
+                        <div><strong>Explanation:</strong> {example.explanation}</div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Constraints */}
+            {problem.constraints && (
+              <div className="constraints">
+                <h4>Constraints:</h4>
+                <pre>{problem.constraints}</pre>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Code Editor */}
+        <div className="code-panel">
+          <div className="panel-header">
+            <h3>💻 Code Editor</h3>
+            <select 
+              value={selectedLanguage} 
+              onChange={(e) => setSelectedLanguage(e.target.value)}
+              className="language-select"
+            >
+              {Object.entries(languages).map(([key, name]) => (
+                <option key={key} value={key}>{name}</option>
+              ))}
+            </select>
+          </div>
+          <div className="panel-content">
+            <textarea
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              placeholder="Write your code here..."
+              className="code-editor"
+              spellCheck={false}
+            />
+            
+            <div className="editor-actions">
+              <button 
+                onClick={handleSubmit}
+                disabled={submitting}
+                className="submit-btn"
+              >
+                {submitting ? '🔄 Running...' : '🚀 Submit Solution'}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Results */}
+      {result && (
+        <div className="result-panel">
+          <div className="panel-header">
+            <h3>📊 Submission Result</h3>
+          </div>
+          <div className="panel-content">
+            <div className="result-summary">
+              <div 
+                className="verdict"
+                style={{ color: getVerdictColor(result.verdict) }}
+              >
+                {result.verdict}
+              </div>
+              
+              {result.verdict === 'Accepted' && (
+                <div className="success-stats">
+                  <div>✅ All test cases passed!</div>
+                  <div>⏱️ Runtime: {result.runtime}ms</div>
+                  <div>💾 Memory: {result.memory}KB</div>
+                  <div>🎯 Tests: {result.passedTests}/{result.totalTests}</div>
+                </div>
+              )}
+
+              {result.verdict === 'Wrong Answer' && result.failedCase && (
+                <div className="failed-case">
+                  <div>❌ Test case #{result.failedCase.testNumber} failed</div>
+                  <div><strong>Input:</strong> {result.failedCase.input}</div>
+                  <div><strong>Expected:</strong> {result.failedCase.expected}</div>
+                  <div><strong>Your output:</strong> {result.failedCase.actual}</div>
+                </div>
+              )}
+
+              {(result.verdict === 'Compilation Error' || 
+                result.verdict === 'Runtime Error' || 
+                result.verdict === 'System Error') && result.failedCase && (
+                <div className="error-details">
+                  <div>❌ {result.verdict}</div>
+                  <pre>{result.failedCase.error}</pre>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 };
 
 export default ProblemView;
