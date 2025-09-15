@@ -8,7 +8,7 @@
 **Code Master** is a modern, full-stack online judge platform that allows users to solve coding problems in multiple programming languages. It provides real-time code execution, comprehensive problem management, and detailed submission tracking - similar to LeetCode or HackerRank.
 
 
-![Code Master Logo](images/front.png)
+![Code Master Logo](screenshots/front.png)
 
 
 ### 🌟 Why Code Master?
